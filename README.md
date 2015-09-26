@@ -14,12 +14,16 @@ The indicator shows several states of the crystalhd (Broadcom BCM70012 BCM70015)
 
 **Ubuntu Unity:**
 ![1](http://i.imgur.com/pKjWmZt.png) 
+
 ![2](http://i.imgur.com/BAnJK4t.png)
+
 ![3](http://i.imgur.com/PEKLpDN.png)
 
 **Xfce ,LXDE, Openbox(tint2):**
 ![4](http://i.imgur.com/72C9QmN.png)
+
 ![5](http://i.imgur.com/aM3TjAm.png)
+
 ![6](http://i.imgur.com/tfjaPf3.png)
 
 
