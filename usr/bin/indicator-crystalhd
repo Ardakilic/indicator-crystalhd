@@ -136,7 +136,7 @@ class CrystalHD_Indicator:
 			self.ind.set_icon(Path+Icons+"/ON.svg")
 						
 		##CHECKING DMESG OUTPUT
-		crystalhd=str(os.popen('dmesg | grep crystalhd | tail -1').readlines())
+		crystalhd=str(os.popen('dmesg | grep crystalhd | tail -2').readlines())
 		
 		#Icon settings function
 		def set_state(enable_btn, disable_btn, restart_btn, help_btn, state_lbl, set_indicator, img_file):
@@ -170,7 +170,7 @@ class CrystalHD_Indicator:
 						
 		
 		#Ready:
-		if crystalhd.find("Closing")!= -1 or crystalhd.find("latency")!= -1:
+		if crystalhd.find("Starting")!= -1 or crystalhd.find("latency")!= -1:
 			set_state(False,True,False,False,"Crystal HD: Ready",False,"/ON.svg")
 									
 		#Stalling while decoding:
