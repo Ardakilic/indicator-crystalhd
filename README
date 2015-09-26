@@ -1,0 +1,11 @@
+INSTALL:
+extract the archive, then copy "usr" into the root: "sudo cp usr / -R"
+
+Known dependences: Python-appindicator
+
+
+FAQ
+
+Q: When I use a non default icon theme, the cHD icons are too bright to see.
+A: You should get the icon theme name (e.g. by watching the terminal output by indicator-crystalhd),
+then copy the /usr/share/indicator-crystalhd/Radiance folder to /usr/share/indicator-crystalhd/<theme-name>.

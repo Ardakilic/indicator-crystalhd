@@ -1,0 +1,205 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+### BEGIN LICENSE
+# Copyright (C) 2012 Marcel Schumacher schumi2012@googlemail.com
+#
+# This program is free software: you can redistribute it and/or modify it 
+# under the terms of the GNU General Public License version 3, as published 
+# by the Free Software Foundation.
+# 
+# This program is distributed in the hope that it will be useful, but 
+# WITHOUT ANY WARRANTY; without even the implied warranties of 
+# MERCHANTABILITY, SATISFACTORY QUALITY, or FITNESS FOR A PARTICULAR 
+# PURPOSE. See the GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License along 
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
+### END LICENSE
+# Version 1.24
+
+import sys
+import gtk
+import appindicator
+import os
+import time
+import webbrowser
+
+Path = "/usr/share/indicator-crystalhd/media/"
+Icons = "Ambiance"
+Ubuntu_session = True
+		
+class CrystalHD_Indicator:
+	Poll = 700 # ms	
+		
+	def __init__(self):
+		
+		#Check if a Ubuntu session is running
+		self.check_session_type()
+		self.check_session_type()
+		print "\nSession-name: "+os.popen('echo $DESKTOP_SESSION').read()
+		
+		#Check which theme is used and set the right icon theme
+		Icons = gtk.settings_get_default().get_property('gtk-theme-name') 
+		print "Theme-name: "+gtk.settings_get_default().get_property('gtk-theme-name') 
+		
+		if self.Ubuntu_session == False: 
+			self.statusicon = gtk.StatusIcon()
+			self.statusicon.connect("popup-menu", self.right_click_event)
+			self.statusicon.set_tooltip("CrystalHD")
+	 								
+		#Install autostart-file
+		if str(os.popen('if [ -f $HOME/.config/autostart/indicator-crystalhd.desktop ]\n then echo true\n fi').readlines()).find("true")==-1:
+			os.system("mkdir $HOME/.config/autostart")
+			os.system('echo "[Desktop Entry]\nName=indicator-crystalhd\nExec=indicator-crystalhd\nGenericName=CrystalHD Indicator\nCategories=GNOME;Utility;\nExec=indicator-crystalhd\nIcon=/usr/share/indicator-crystalhd/media/Radiance/ACTIVE.svg\nTerminal=false\nType=Application" > $HOME/.config/autostart/indicator-crystalhd.desktop')
+						
+		#Initialize
+		self.ind = appindicator.Indicator("indicator-crystalhd",Path+Icons+"/ON.svg",appindicator.CATEGORY_HARDWARE)
+				
+		self.ind.set_status(appindicator.STATUS_ACTIVE)
+		      
+		self.ind.set_attention_icon(Path+Icons+"/OFF.svg")
+		
+		self.menu_setup()
+		
+		if self.Ubuntu_session == True:
+			self.ind.set_menu(self.menu)
+		
+	def right_click_event(self, icon, button, time):
+		self.menu.popup(None, None, gtk.status_icon_position_menu, button, time, self.statusicon)
+        
+	def menu_setup(self):
+		self.menu = gtk.Menu()
+                   
+		self.enable_item = gtk.MenuItem("Switch on")
+		self.enable_item.connect("activate", self.enable_chd)
+		self.enable_item.show()
+        
+		self.disable_item = gtk.MenuItem("Switch off")
+		self.disable_item.connect("activate", self.disable_chd)
+		self.disable_item.show()
+		
+		self.restart_item = gtk.MenuItem("Reload driver")
+		self.restart_item.connect("activate", self.restart_chd)
+		self.restart_item.show()
+		
+		self.help_item = gtk.MenuItem("Visit help page")
+		self.help_item.connect("activate", self.open_wiki)
+		self.help_item.show()
+       
+		self.state_item = gtk.MenuItem("Init")
+		self.state_item.show()
+		self.state_item.set_sensitive(False)
+        						
+		self.menu.append(self.state_item)
+		self.menu.append(self.enable_item)
+		self.menu.append(self.disable_item)
+		self.menu.append(self.restart_item)
+		self.menu.append(self.help_item)
+
+	def check_session_type(self):
+		if os.popen('echo $DESKTOP_SESSION').read()=="ubuntu\n" or os.popen('echo $DESKTOP_SESSION').read()=="ubuntu-2d\n":
+			self.Ubuntu_session= True
+		else: self.Ubuntu_session= False
+		
+	def main(self):
+		self.check_chd()
+		gtk.timeout_add(self.Poll, self.check_chd)
+		gtk.main()
+	
+	def open_wiki(self, widget):
+		webbrowser.open('http://code.google.com/p/indicator-crystalhd/wiki/CrystalHDHowTo')
+					
+	def disable_chd(self, widget):
+		os.system("gksudo sh /usr/share/indicator-crystalhd/scripts/switchoff.sh")
+						
+	def enable_chd(self, widget):
+		os.system("gksudo sh /usr/share/indicator-crystalhd/scripts/switchon.sh")
+				
+	def restart_chd(self, widget):
+		os.system("gksudo sh /usr/share/indicator-crystalhd/scripts/reset.sh")
+		
+			   
+	def check_chd(self):
+		
+		#checking icon-theme
+		Icons = gtk.settings_get_default().get_property('gtk-theme-name') 
+				
+		#Fallback icon-set in case theme recognition wasn't successful
+		if os.path.isfile(Path+Icons+"/OFF.svg")==False:
+			Icons = "Ambiance"
+			
+		##Check session-type
+		self.check_session_type()
+						
+		if self.Ubuntu_session == True:
+			self.ind.set_attention_icon(Path+Icons+"/OFF.svg")
+			self.ind.set_icon(Path+Icons+"/ON.svg")
+						
+		##CHECKING DMESG OUTPUT
+		crystalhd=str(os.popen('dmesg | grep crystalhd | tail -1').readlines())
+		
+		#Icon settings function
+		def set_state(enable_btn, disable_btn, restart_btn, help_btn, state_lbl, set_indicator, img_file):
+			if enable_btn==True:
+					self.enable_item.show()
+			else:	self.enable_item.hide()
+			
+			if disable_btn==True:
+					self.disable_item.show()
+			else:	self.disable_item.hide()
+			
+			if restart_btn==True:
+					self.restart_item.show()
+			else:	self.restart_item.hide()
+			
+			if help_btn==True:
+					self.help_item.show()
+			else:	self.help_item.hide()
+			
+			self.state_item.set_label(state_lbl)
+			
+			if self.Ubuntu_session == True:
+				self.ind.set_attention_icon(Path+Icons+img_file)
+			
+				if set_indicator==True:
+						self.ind.set_status(appindicator.STATUS_ATTENTION)
+				else: 	self.ind.set_status(appindicator.STATUS_ACTIVE)
+			if self.Ubuntu_session == False:
+				self.statusicon.set_from_file(Path+Icons+img_file)
+				self.statusicon.set_tooltip(state_lbl)
+						
+		
+		#Ready:
+		if crystalhd.find("Closing")!= -1 or crystalhd.find("latency")!= -1:
+			set_state(False,True,False,False,"Crystal HD: Ready",False,"/ON.svg")
+									
+		#Stalling while decoding:
+		elif crystalhd.find("FETCH")!= -1:
+			set_state(False,False,False,False,"Crystal HD: Stalling",True,"/STALL.svg")
+			
+		#Old driver installed:
+		elif crystalhd.find("0.9.27")!= -1:
+			set_state(False,False,True,True,"Crystal HD: Deprecated driver",True,"/OFF.svg")
+									
+		#Deactivated:
+		elif crystalhd.find("disabled")!= -1:
+			set_state(True,False,False,False,"Crystal HD: Disabled",True,"/OFF.svg")
+								
+		#Error while decoding:
+		elif crystalhd.find("failed")!= -1 or crystalhd.find("segfault")!= -1 or crystalhd.find("RIP")!= -1 or crystalhd.find("Failed")!= -1:
+			set_state(False,False,False,False,"Crystal HD: Failure",True,"/ERROR.svg")
+					
+		#Working:
+		elif crystalhd.find("Opening")!= -1 or crystalhd.find("MISSING")!= -1 or crystalhd.find("PIB")!=-1: 
+			set_state(False,False,False,False,"Crystal HD: Processing",True,"/ACTIVE.svg")
+		
+		#Empty state, crystalhd was blacklisted or isn't installed at all:
+		else: 
+			set_state(True,False,False,False,"Crystal HD: Off",True,"/OFF.svg")
+			self.ind.set_icon(Path+Icons+"/OFF.svg")
+						
+		return True	
+  
+if __name__ == "__main__":
+    indicator = CrystalHD_Indicator()
+    indicator.main()
